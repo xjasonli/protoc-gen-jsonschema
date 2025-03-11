@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alecthomas/jsonschema"
 	"github.com/iancoleman/orderedmap"
 	"github.com/xeipuuv/gojsonschema"
 	"google.golang.org/protobuf/proto"
@@ -14,6 +13,8 @@ import (
 	protoc_gen_validate "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoc_gen_field_options "github.com/xjasonli/protoc-gen-jsonschema/options/field"
 	protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
+	protoc_gen_oneof_options "github.com/xjasonli/protoc-gen-jsonschema/options/oneof"
+	jsonschema "github.com/zachary246/jsonschema"
 )
 
 var (
@@ -644,19 +645,43 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 
 		// If this field is part of a OneOf declaration then build that here:
 		if c.Flags.EnforceOneOf && fieldDesc.OneofIndex != nil && !fieldDesc.GetProto3Optional() {
-			for {
-				if *fieldDesc.OneofIndex < int32(len(jsonSchemaType.AllOf)) {
+
+			// Also add to OneOfs for documentation purposes
+			fieldName := fieldDesc.GetName()
+			if c.Flags.UseJSONFieldnamesOnly {
+				fieldName = fieldDesc.GetJsonName()
+			}
+
+			// Get oneof name from parent message's oneof declarations
+			oneofDecl := msgDesc.GetOneofDecl()[*fieldDesc.OneofIndex]
+			oneofName := oneofDecl.GetName()
+
+			// Get description from oneof declaration
+			var description string
+			if src := c.sourceInfo.GetOneof(oneofDecl); src != nil {
+				_, description = c.formatTitleAndDescription(strPtr(oneofName), src)
+			}
+			// Find or create the OneOfs entry for this oneof index
+			var oneOfEntry *jsonschema.OneOfs
+			for i := range jsonSchemaType.OneOfs {
+				if len(jsonSchemaType.OneOfs[i].Fields) > 0 && jsonSchemaType.OneOfs[i].Name == oneofName {
+					oneOfEntry = &jsonSchemaType.OneOfs[i]
 					break
 				}
-				var notAnyOf = &jsonschema.Type{Not: &jsonschema.Type{AnyOf: []*jsonschema.Type{}}}
-				jsonSchemaType.AllOf = append(jsonSchemaType.AllOf, &jsonschema.Type{OneOf: []*jsonschema.Type{notAnyOf}})
 			}
-			if c.Flags.UseJSONFieldnamesOnly {
-				jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf = append(jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf, &jsonschema.Type{Required: []string{fieldDesc.GetJsonName()}})
-				jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf[0].Not.AnyOf = append(jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf[0].Not.AnyOf, &jsonschema.Type{Required: []string{fieldDesc.GetJsonName()}})
+
+			// 检查字段是否必需
+			required := proto.GetExtension(oneofDecl.GetOptions(), protoc_gen_oneof_options.E_Required).(bool)
+
+			if oneOfEntry == nil {
+				jsonSchemaType.OneOfs = append(jsonSchemaType.OneOfs, jsonschema.OneOfs{
+					Name:        oneofName,
+					Description: description,
+					Fields:      []string{fieldName},
+					Required:    required,
+				})
 			} else {
-				jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf = append(jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf, &jsonschema.Type{Required: []string{fieldDesc.GetName()}})
-				jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf[0].Not.AnyOf = append(jsonSchemaType.AllOf[*fieldDesc.OneofIndex].OneOf[0].Not.AnyOf, &jsonschema.Type{Required: []string{fieldDesc.GetName()}})
+				oneOfEntry.Fields = append(oneOfEntry.Fields, fieldName)
 			}
 		}
 

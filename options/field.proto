@@ -19,4 +19,7 @@ extend google.protobuf.FieldOptions {
 
   // Fields tagged with this will constrain strings using the "pattern" keyword in generated schemas
   string pattern = 3005;
+
+  // Fields tagged with this will use the specified display name in generated schemas 
+  string display_name = 3006;
 }

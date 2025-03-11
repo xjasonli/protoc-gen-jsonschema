@@ -42,6 +42,10 @@ func (s sourceCodeInfo) GetEnumValue(e *descriptor.EnumValueDescriptorProto) *de
 	return s.lookup[e]
 }
 
+func (s sourceCodeInfo) GetOneof(o *descriptor.OneofDescriptorProto) *descriptor.SourceCodeInfo_Location {
+	return s.lookup[o]
+}
+
 func newSourceCodeInfo(fs []*descriptor.FileDescriptorProto) *sourceCodeInfo {
 	// For each source location in the provided files
 	// - resolve the (annoyingly) encoded path to its message/field/service/enum/etc definition

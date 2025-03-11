@@ -9,18 +9,18 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/alecthomas/jsonschema"
 	"github.com/iancoleman/strcase"
 	"github.com/sirupsen/logrus"
 	"github.com/xeipuuv/gojsonschema"
+	"github.com/zachary246/jsonschema"
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/proto"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 	plugin "google.golang.org/protobuf/types/pluginpb"
 
+	protoc_gen_enum_options "github.com/xjasonli/protoc-gen-jsonschema/options/enum"
 	protoc_gen_file_options "github.com/xjasonli/protoc-gen-jsonschema/options/file"
 	protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
-	protoc_gen_enum_options "github.com/xjasonli/protoc-gen-jsonschema/options/enum"
 )
 
 const (
