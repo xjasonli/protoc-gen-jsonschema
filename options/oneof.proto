@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package jsonschema.oneof;
+
+option go_package = "github.com/xjasonli/protoc-gen-jsonschema/options/oneof";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.OneofOptions {
+    bool required = 3001;
+}
