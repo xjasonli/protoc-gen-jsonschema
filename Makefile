@@ -15,11 +15,11 @@ fmt:
 
 .PHONY: generate
 generate:
-	@protoc --go_out=paths=source_relative:. --proto_path=. options.proto
+	@protoc --go_out=options --go_opt=module=github.com/xjasonli/protoc-gen-jsonschema/options --proto_path=. options/*.proto
 
 .PHONY: install
 install:
-	@go install github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema
+	@go install github.com/xjasonli/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema
 
 .PHONY: build_linux
 build_linux:

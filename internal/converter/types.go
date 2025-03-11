@@ -11,8 +11,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	protoc_gen_jsonschema "github.com/chrusty/protoc-gen-jsonschema"
 	protoc_gen_validate "github.com/envoyproxy/protoc-gen-validate/validate"
+	protoc_gen_field_options "github.com/xjasonli/protoc-gen-jsonschema/options/field"
+	protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
 )
 
 var (
@@ -150,11 +151,18 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 		stringDef := &jsonschema.Type{Type: gojsonschema.TYPE_STRING}
 
 		// Custom field options from protoc-gen-jsonschema:
-		if opt := proto.GetExtension(desc.GetOptions(), protoc_gen_jsonschema.E_FieldOptions); opt != nil {
-			if fieldOptions, ok := opt.(*protoc_gen_jsonschema.FieldOptions); ok {
-				stringDef.MinLength = int(fieldOptions.GetMinLength())
-				stringDef.MaxLength = int(fieldOptions.GetMaxLength())
-				stringDef.Pattern = fieldOptions.GetPattern()
+		if opts := desc.GetOptions(); opts != nil {
+			if proto.HasExtension(opts, protoc_gen_field_options.E_MinLength) {
+				minLength := proto.GetExtension(opts, protoc_gen_field_options.E_MinLength).(int32)
+				stringDef.MinLength = int(minLength)
+			}
+			if proto.HasExtension(opts, protoc_gen_field_options.E_MaxLength) {
+				maxLength := proto.GetExtension(opts, protoc_gen_field_options.E_MaxLength).(int32)
+				stringDef.MaxLength = int(maxLength)
+			}
+			if proto.HasExtension(opts, protoc_gen_field_options.E_Pattern) {
+				pattern := proto.GetExtension(opts, protoc_gen_field_options.E_Pattern).(string)
+				stringDef.Pattern = pattern
 			}
 		}
 
@@ -323,13 +331,13 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 				Tracef("Is a map")
 
 			if recursedJSONSchemaType.Properties == nil {
-				return nil, fmt.Errorf("Unable to find properties of MAP type")
+				return nil, fmt.Errorf("unable to find properties of MAP type")
 			}
 
 			// Make sure we have a "value":
 			value, valuePresent := recursedJSONSchemaType.Properties.Get("value")
 			if !valuePresent {
-				return nil, fmt.Errorf("Unable to find 'value' property of MAP type")
+				return nil, fmt.Errorf("unable to find 'value' property of MAP type")
 			}
 
 			// Marshal the "value" properties to JSON (because that's how we can pass on AdditionalProperties):
@@ -346,9 +354,7 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 
 			// Build up the list of required fields:
 			if messageFlags.AllFieldsRequired && len(recursedJSONSchemaType.OneOf) == 0 && recursedJSONSchemaType.Properties != nil {
-				for _, property := range recursedJSONSchemaType.Properties.Keys() {
-					jsonSchemaType.Items.Required = append(jsonSchemaType.Items.Required, property)
-				}
+				jsonSchemaType.Items.Required = append(jsonSchemaType.Items.Required, recursedJSONSchemaType.Properties.Keys()...)
 			}
 			jsonSchemaType.Items.Required = dedupe(jsonSchemaType.Items.Required)
 
@@ -372,9 +378,7 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 
 			// Build up the list of required fields:
 			if messageFlags.AllFieldsRequired && len(recursedJSONSchemaType.OneOf) == 0 && recursedJSONSchemaType.Properties != nil {
-				for _, property := range recursedJSONSchemaType.Properties.Keys() {
-					jsonSchemaType.Required = append(jsonSchemaType.Required, property)
-				}
+				jsonSchemaType.Items.Required = append(jsonSchemaType.Items.Required, recursedJSONSchemaType.Properties.Keys()...)
 			}
 		}
 
@@ -408,9 +412,9 @@ func (c *Converter) convertMessageType(curPkg *ProtoPackage, msgDesc *descriptor
 	for refmsgDesc, nameWithPackage := range duplicatedMessages {
 		var typeName string
 		if c.Flags.TypeNamesWithNoPackage {
-			typeName = refmsgDesc.GetName();
+			typeName = refmsgDesc.GetName()
 		} else {
-			typeName = nameWithPackage;
+			typeName = nameWithPackage
 		}
 		refType, err := c.recursiveConvertMessageType(curPkg, refmsgDesc, "", duplicatedMessages, true)
 		if err != nil {
@@ -489,26 +493,28 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 	messageFlags := c.Flags
 
 	// Custom message options from protoc-gen-jsonschema:
-	if opt := proto.GetExtension(msgDesc.GetOptions(), protoc_gen_jsonschema.E_MessageOptions); opt != nil {
-		if messageOptions, ok := opt.(*protoc_gen_jsonschema.MessageOptions); ok {
-
-			// AllFieldsRequired:
-			if messageOptions.GetAllFieldsRequired() {
+	if opts := msgDesc.GetOptions(); opts != nil {
+		if proto.HasExtension(opts, protoc_gen_message_options.E_AllFieldsRequired) {
+			allFieldsRequired := proto.GetExtension(opts, protoc_gen_message_options.E_AllFieldsRequired).(bool)
+			if allFieldsRequired {
 				messageFlags.AllFieldsRequired = true
 			}
-
-			// AllowNullValues:
-			if messageOptions.GetAllowNullValues() {
+		}
+		if proto.HasExtension(opts, protoc_gen_message_options.E_AllowNullValues) {
+			allowNullValues := proto.GetExtension(opts, protoc_gen_message_options.E_AllowNullValues).(bool)
+			if allowNullValues {
 				messageFlags.AllowNullValues = true
 			}
-
-			// DisallowAdditionalProperties:
-			if messageOptions.GetDisallowAdditionalProperties() {
+		}
+		if proto.HasExtension(opts, protoc_gen_message_options.E_DisallowAdditionalProperties) {
+			disallowAdditionalProperties := proto.GetExtension(opts, protoc_gen_message_options.E_DisallowAdditionalProperties).(bool)
+			if disallowAdditionalProperties {
 				messageFlags.DisallowAdditionalProperties = true
 			}
-
-			// ENUMs as constants:
-			if messageOptions.GetEnumsAsConstants() {
+		}
+		if proto.HasExtension(opts, protoc_gen_message_options.E_EnumsAsConstants) {
+			enumsAsConstants := proto.GetExtension(opts, protoc_gen_message_options.E_EnumsAsConstants).(bool)
+			if enumsAsConstants {
 				messageFlags.EnumsAsConstants = true
 			}
 		}
@@ -577,9 +583,9 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 	if nameWithPackage, ok := duplicatedMessages[msgDesc]; ok && !ignoreDuplicatedMessages {
 		var typeName string
 		if c.Flags.TypeNamesWithNoPackage {
-			typeName = msgDesc.GetName();
+			typeName = msgDesc.GetName()
 		} else {
-			typeName = nameWithPackage;
+			typeName = nameWithPackage
 		}
 		return &jsonschema.Type{
 			Ref: fmt.Sprintf("%s%s", c.refPrefix, typeName),
@@ -607,17 +613,17 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 	for _, fieldDesc := range msgDesc.GetField() {
 
 		// Custom field options from protoc-gen-jsonschema:
-		if opt := proto.GetExtension(fieldDesc.GetOptions(), protoc_gen_jsonschema.E_FieldOptions); opt != nil {
-			if fieldOptions, ok := opt.(*protoc_gen_jsonschema.FieldOptions); ok {
-
-				// "Ignored" fields are simply skipped:
-				if fieldOptions.GetIgnore() {
+		if opts := fieldDesc.GetOptions(); opts != nil {
+			if proto.HasExtension(opts, protoc_gen_field_options.E_Ignore) {
+				ignore := proto.GetExtension(opts, protoc_gen_field_options.E_Ignore).(bool)
+				if ignore {
 					c.logger.WithField("field_name", fieldDesc.GetName()).WithField("message_name", msgDesc.GetName()).Debug("Skipping ignored field")
 					continue
 				}
-
-				// "Required" fields are added to the list of required attributes in our schema:
-				if fieldOptions.GetRequired() {
+			}
+			if proto.HasExtension(opts, protoc_gen_field_options.E_Required) {
+				required := proto.GetExtension(opts, protoc_gen_field_options.E_Required).(bool)
+				if required {
 					c.logger.WithField("field_name", fieldDesc.GetName()).WithField("message_name", msgDesc.GetName()).Debug("Marking required field")
 					if c.Flags.UseJSONFieldnamesOnly {
 						jsonSchemaType.Required = append(jsonSchemaType.Required, fieldDesc.GetJsonName())

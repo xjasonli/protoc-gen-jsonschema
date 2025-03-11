@@ -18,7 +18,9 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 	plugin "google.golang.org/protobuf/types/pluginpb"
 
-	protoc_gen_jsonschema "github.com/chrusty/protoc-gen-jsonschema"
+	protoc_gen_file_options "github.com/xjasonli/protoc-gen-jsonschema/options/file"
+	protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
+	protoc_gen_enum_options "github.com/xjasonli/protoc-gen-jsonschema/options/enum"
 )
 
 const (
@@ -150,30 +152,24 @@ func (c *Converter) convertEnumType(enum *descriptor.EnumDescriptorProto, conver
 	converterFlags.EnumsAsStringsOnly = c.Flags.EnumsAsStringsOnly
 
 	// Set some per-enum flags from config and options:
-	if opts := enum.GetOptions(); opts != nil && proto.HasExtension(opts, protoc_gen_jsonschema.E_EnumOptions) {
-		if opt := proto.GetExtension(opts, protoc_gen_jsonschema.E_EnumOptions); opt != nil {
-			if enumOptions, ok := opt.(*protoc_gen_jsonschema.EnumOptions); ok {
-
-				// ENUMs as constants:
-				if enumOptions.GetEnumsAsConstants() {
-					converterFlags.EnumsAsConstants = true
-				}
-
-				// ENUM values as strings only:
-				if enumOptions.GetEnumsAsStringsOnly() {
-					converterFlags.EnumsAsStringsOnly = true
-				}
-
-				// ENUM values trim enum name prefix:
-				if enumOptions.GetEnumsTrimPrefix() {
-					converterFlags.EnumsTrimPrefix = true
-				}
-
-				// If this particular ENUM is marked with the "ignore" option then return a skipped error:
-				if enumOptions.GetIgnore() {
-					c.logger.WithField("msg_name", enum.GetName()).Debug("Skipping ignored enum")
-					return jsonSchemaType, errIgnored
-				}
+	if opts := enum.GetOptions(); opts != nil {
+		if proto.HasExtension(opts, protoc_gen_enum_options.E_EnumsAsConstants) {
+			enumsAsConstants := proto.GetExtension(opts, protoc_gen_enum_options.E_EnumsAsConstants).(bool)
+			converterFlags.EnumsAsConstants = enumsAsConstants
+		}
+		if proto.HasExtension(opts, protoc_gen_enum_options.E_EnumsAsStringsOnly) {
+			enumsAsStringsOnly := proto.GetExtension(opts, protoc_gen_enum_options.E_EnumsAsStringsOnly).(bool)
+			converterFlags.EnumsAsStringsOnly = enumsAsStringsOnly
+		}
+		if proto.HasExtension(opts, protoc_gen_enum_options.E_EnumsTrimPrefix) {
+			enumsTrimPrefix := proto.GetExtension(opts, protoc_gen_enum_options.E_EnumsTrimPrefix).(bool)
+			converterFlags.EnumsTrimPrefix = enumsTrimPrefix
+		}
+		if proto.HasExtension(opts, protoc_gen_enum_options.E_Ignore) {
+			ignore := proto.GetExtension(opts, protoc_gen_enum_options.E_Ignore).(bool)
+			if ignore {
+				c.logger.WithField("msg_name", enum.GetName()).Debug("Skipping ignored enum")
+				return jsonSchemaType, errIgnored
 			}
 		}
 	}
@@ -305,15 +301,12 @@ func (c *Converter) convertFile(file *descriptor.FileDescriptorProto, fileExtens
 		for _, msgDesc := range file.GetMessageType() {
 
 			// Check for our custom message options:
-			if opts := msgDesc.GetOptions(); opts != nil && proto.HasExtension(opts, protoc_gen_jsonschema.E_MessageOptions) {
-				if opt := proto.GetExtension(opts, protoc_gen_jsonschema.E_MessageOptions); opt != nil {
-					if messageOptions, ok := opt.(*protoc_gen_jsonschema.MessageOptions); ok {
-
-						// "Ignored" messages are simply skipped:
-						if messageOptions.GetIgnore() {
-							c.logger.WithField("msg_name", msgDesc.GetName()).Debug("Skipping ignored message")
-							continue
-						}
+			if opts := msgDesc.GetOptions(); opts != nil {
+				if proto.HasExtension(opts, protoc_gen_message_options.E_Ignore) {
+					ignore := proto.GetExtension(opts, protoc_gen_message_options.E_Ignore).(bool)
+					if ignore {
+						c.logger.WithField("msg_name", msgDesc.GetName()).Debug("Skipping ignored message")
+						continue
 					}
 				}
 			}
@@ -376,21 +369,19 @@ func (c *Converter) convert(request *plugin.CodeGeneratorRequest) (*plugin.CodeG
 		fileExtension := c.schemaFileExtension
 
 		// Check for our custom file options:
-		if opts := fileDesc.GetOptions(); opts != nil && proto.HasExtension(opts, protoc_gen_jsonschema.E_FileOptions) {
-			if opt := proto.GetExtension(opts, protoc_gen_jsonschema.E_FileOptions); opt != nil {
-				if fileOptions, ok := opt.(*protoc_gen_jsonschema.FileOptions); ok {
-
-					// "Ignored" files are simply skipped:
-					if fileOptions.GetIgnore() {
-						c.logger.WithField("file_name", fileDesc.GetName()).Debug("Skipping ignored file")
-						continue
-					}
-
-					// Allow the file extension option to take precedence:
-					if fileOptions.GetExtension() != "" {
-						fileExtension = fileOptions.GetExtension()
-						c.logger.WithField("file_name", fileDesc.GetName()).WithField("extension", fileExtension).Debug("Using optional extension")
-					}
+		if opts := fileDesc.GetOptions(); opts != nil {
+			if proto.HasExtension(opts, protoc_gen_file_options.E_Ignore) {
+				ignore := proto.GetExtension(opts, protoc_gen_file_options.E_Ignore).(bool)
+				if ignore {
+					c.logger.WithField("file_name", fileDesc.GetName()).Debug("Skipping ignored file")
+					continue
+				}
+			}
+			if proto.HasExtension(opts, protoc_gen_file_options.E_Extension) {
+				extension := proto.GetExtension(opts, protoc_gen_file_options.E_Extension).(string)
+				if extension != "" {
+					fileExtension = extension
+					c.logger.WithField("file_name", fileDesc.GetName()).WithField("extension", fileExtension).Debug("Using optional extension")
 				}
 			}
 		}

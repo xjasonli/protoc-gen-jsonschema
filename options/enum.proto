@@ -1,0 +1,19 @@
+syntax = "proto3";
+package jsonschema.enum;
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/xjasonli/protoc-gen-jsonschema/options/enum";
+
+extend google.protobuf.EnumOptions {
+  // Enums tagged with this will have be encoded to use constants instead of simple types (supports value annotations):
+  bool enums_as_constants = 3001;
+
+  // Enums tagged with this will only provide string values as options (not their numerical equivalents):
+  bool enums_as_strings_only = 3002;
+  
+  // Enums tagged with this will have enum name prefix removed from values:
+  bool enums_trim_prefix = 3003;
+
+  // Enums tagged with this will not be processed
+  bool ignore = 3004;
+}

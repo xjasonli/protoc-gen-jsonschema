@@ -1,0 +1,13 @@
+syntax = "proto3";
+package jsonschema.file;
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/xjasonli/protoc-gen-jsonschema/options/file";
+
+extend google.protobuf.FileOptions {
+  // Files tagged with this will not be processed
+  bool ignore = 3001;
+
+  // Override the default file extension for schemas generated from this file
+  string extension = 3002;
+}

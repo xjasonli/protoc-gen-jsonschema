@@ -1,0 +1,22 @@
+syntax = "proto3";
+package jsonschema.message;
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/xjasonli/protoc-gen-jsonschema/options/message";
+
+extend google.protobuf.MessageOptions {
+  // Messages tagged with this will not be processed
+  bool ignore = 3001;
+
+  // Messages tagged with this will have all fields marked as "required":
+  bool all_fields_required = 3002;
+
+  // Messages tagged with this will additionally accept null values for all properties:
+  bool allow_null_values = 3003;
+
+  // Messages tagged with this will have all fields marked as not allowing additional properties:
+  bool disallow_additional_properties = 3004;
+
+  // Messages tagged with this will have all nested enums encoded to use constants instead of simple types (supports value annotations):
+  bool enums_as_constants = 3005;
+}

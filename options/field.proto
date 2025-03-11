@@ -1,0 +1,22 @@
+syntax = "proto3";
+package jsonschema.field;
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/xjasonli/protoc-gen-jsonschema/options/field";
+
+extend google.protobuf.FieldOptions {
+  // Fields tagged with this will be omitted from generated schemas
+  bool ignore = 3001;
+
+  // Fields tagged with this will be marked as "required" in generated schemas
+  bool required = 3002;
+
+  // Fields tagged with this will constrain strings using the "minLength" keyword in generated schemas
+  int32 min_length = 3003;
+
+  // Fields tagged with this will constrain strings using the "maxLength" keyword in generated schemas
+  int32 max_length = 3004;
+
+  // Fields tagged with this will constrain strings using the "pattern" keyword in generated schemas
+  string pattern = 3005;
+}
