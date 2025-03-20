@@ -10,7 +10,6 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.8.1
 	github.com/xeipuuv/gojsonschema v1.2.0
-	github.com/zachary246/jsonschema v0.0.0-20250311101152-c750c2760b74
 	google.golang.org/protobuf v1.30.0
 )
 

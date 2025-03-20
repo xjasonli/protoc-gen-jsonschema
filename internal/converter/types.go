@@ -11,10 +11,10 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	protoc_gen_validate "github.com/envoyproxy/protoc-gen-validate/validate"
+	jsonschema "github.com/xjasonli/protoc-gen-jsonschema/jsonschema"
 	protoc_gen_field_options "github.com/xjasonli/protoc-gen-jsonschema/options/field"
 	protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
 	protoc_gen_oneof_options "github.com/xjasonli/protoc-gen-jsonschema/options/oneof"
-	jsonschema "github.com/zachary246/jsonschema"
 )
 
 var (
@@ -76,7 +76,14 @@ func (c *Converter) registerType(pkgName string, msgDesc *descriptor.DescriptorP
 }
 
 // Convert a proto "field" (essentially a type-switch with some recursion):
-func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDescriptorProto, msgDesc *descriptor.DescriptorProto, duplicatedMessages map[*descriptor.DescriptorProto]string, messageFlags ConverterFlags) (*jsonschema.Type, error) {
+func (c *Converter) convertField(
+	curPkg *ProtoPackage,
+	desc *descriptor.FieldDescriptorProto,
+	msgDesc *descriptor.DescriptorProto,
+	duplicatedMessages map[*descriptor.DescriptorProto]string,
+	duplicatedEnums map[*descriptor.EnumDescriptorProto]string,
+	messageFlags ConverterFlags,
+) (*jsonschema.Type, error) {
 
 	// Prepare a new jsonschema.Type for our eventual return value:
 	jsonSchemaType := &jsonschema.Type{}
@@ -218,7 +225,7 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 		}
 
 		// We already have a converter for standalone ENUMs, so just use that:
-		enumSchema, err := c.convertEnumType(matchedEnum, messageFlags)
+		enumSchema, err := c.convertEnumType(matchedEnum, messageFlags, duplicatedEnums)
 		if err != nil {
 			switch err {
 			case errIgnored:
@@ -227,7 +234,7 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 			}
 		}
 
-		jsonSchemaType = &enumSchema
+		jsonSchemaType.Ref = enumSchema.Ref
 
 	// Bool:
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
@@ -316,7 +323,7 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 		}
 
 		// Recurse the recordType:
-		recursedJSONSchemaType, err := c.recursiveConvertMessageType(curPkg, recordType, pkgName, duplicatedMessages, false)
+		recursedJSONSchemaType, err := c.recursiveConvertMessageType(curPkg, recordType, pkgName, duplicatedMessages, duplicatedEnums, false)
 		if err != nil {
 			return nil, err
 		}
@@ -403,13 +410,29 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 func (c *Converter) convertMessageType(curPkg *ProtoPackage, msgDesc *descriptor.DescriptorProto) (*jsonschema.Schema, error) {
 
 	// Get a list of any nested messages in our schema:
-	duplicatedMessages, err := c.findNestedMessages(curPkg, msgDesc)
+	duplicatedMessages, duplicatedEnums, err := c.findNestedMessagesAndEnums(curPkg, msgDesc)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build up a list of JSONSchema type definitions for every message:
 	definitions := jsonschema.Definitions{}
+	for refEnum, nameWithPackage := range duplicatedEnums {
+		var typeName string
+		if c.Flags.TypeNamesWithNoPackage {
+			typeName = refEnum.GetName()
+		} else {
+			typeName = nameWithPackage
+		}
+		refType, err := c.convertEnumType(refEnum, c.Flags, make(map[*descriptor.EnumDescriptorProto]string))
+		if err != nil {
+			return nil, err
+		}
+
+		// Add the schema to our definitions:
+		definitions[typeName] = &refType
+	}
+
 	for refmsgDesc, nameWithPackage := range duplicatedMessages {
 		var typeName string
 		if c.Flags.TypeNamesWithNoPackage {
@@ -417,7 +440,7 @@ func (c *Converter) convertMessageType(curPkg *ProtoPackage, msgDesc *descriptor
 		} else {
 			typeName = nameWithPackage
 		}
-		refType, err := c.recursiveConvertMessageType(curPkg, refmsgDesc, "", duplicatedMessages, true)
+		refType, err := c.recursiveConvertMessageType(curPkg, refmsgDesc, "", duplicatedMessages, duplicatedEnums, true)
 		if err != nil {
 			return nil, err
 		}
@@ -440,26 +463,46 @@ func (c *Converter) convertMessageType(curPkg *ProtoPackage, msgDesc *descriptor
 
 // findNestedMessages takes a message, and returns a map mapping pointers to messages nested within it:
 // these messages become definitions which can be referenced (instead of repeating them every time they're used)
-func (c *Converter) findNestedMessages(curPkg *ProtoPackage, msgDesc *descriptor.DescriptorProto) (map[*descriptor.DescriptorProto]string, error) {
-
+func (c *Converter) findNestedMessagesAndEnums(
+	curPkg *ProtoPackage,
+	msgDesc *descriptor.DescriptorProto,
+) (
+	map[*descriptor.DescriptorProto]string,
+	map[*descriptor.EnumDescriptorProto]string,
+	error,
+) {
 	// Get a list of all nested messages, and how often they occur:
 	nestedMessages := make(map[*descriptor.DescriptorProto]string)
-	if err := c.recursiveFindNestedMessages(curPkg, msgDesc, msgDesc.GetName(), nestedMessages); err != nil {
-		return nil, err
+	nestedEnums := make(map[*descriptor.EnumDescriptorProto]string)
+	if err := c.recursiveFindNestedMessagesAndEnums(curPkg, msgDesc, msgDesc.GetName(), nestedMessages, nestedEnums); err != nil {
+		return nil, nil, err
 	}
 
 	// Now filter them:
-	result := make(map[*descriptor.DescriptorProto]string)
+	resultMessages := make(map[*descriptor.DescriptorProto]string)
+	resultEnums := make(map[*descriptor.EnumDescriptorProto]string)
 	for message, messageName := range nestedMessages {
 		if !message.GetOptions().GetMapEntry() && !strings.HasPrefix(messageName, ".google.protobuf.") {
-			result[message] = strings.TrimLeft(messageName, ".")
+			resultMessages[message] = strings.TrimLeft(messageName, ".")
 		}
 	}
 
-	return result, nil
+	for enum, enumName := range nestedEnums {
+		if !strings.HasPrefix(enumName, ".google.protobuf.") {
+			resultEnums[enum] = strings.TrimLeft(enumName, ".")
+		}
+	}
+
+	return resultMessages, resultEnums, nil
 }
 
-func (c *Converter) recursiveFindNestedMessages(curPkg *ProtoPackage, msgDesc *descriptor.DescriptorProto, typeName string, nestedMessages map[*descriptor.DescriptorProto]string) error {
+func (c *Converter) recursiveFindNestedMessagesAndEnums(
+	curPkg *ProtoPackage,
+	msgDesc *descriptor.DescriptorProto,
+	typeName string,
+	nestedMessages map[*descriptor.DescriptorProto]string,
+	nestedEnums map[*descriptor.EnumDescriptorProto]string,
+) error {
 	if _, present := nestedMessages[msgDesc]; present {
 		return nil
 	}
@@ -467,25 +510,36 @@ func (c *Converter) recursiveFindNestedMessages(curPkg *ProtoPackage, msgDesc *d
 
 	for _, desc := range msgDesc.GetField() {
 		descType := desc.GetType()
-		if descType != descriptor.FieldDescriptorProto_TYPE_MESSAGE && descType != descriptor.FieldDescriptorProto_TYPE_GROUP {
-			// no nested messages
-			continue
-		}
-
 		typeName := desc.GetTypeName()
-		recordType, _, ok := c.lookupType(curPkg, typeName)
-		if !ok {
-			return fmt.Errorf("no such message type named %s", typeName)
-		}
-		if err := c.recursiveFindNestedMessages(curPkg, recordType, typeName, nestedMessages); err != nil {
-			return err
+		if descType == descriptor.FieldDescriptorProto_TYPE_ENUM {
+			enumType, _, ok := c.lookupEnum(curPkg, typeName)
+			if !ok {
+				return fmt.Errorf("no such enum type named %s", typeName)
+			}
+			nestedEnums[enumType] = typeName
+
+		} else if descType == descriptor.FieldDescriptorProto_TYPE_MESSAGE || descType == descriptor.FieldDescriptorProto_TYPE_GROUP {
+			recordType, _, ok := c.lookupType(curPkg, typeName)
+			if !ok {
+				return fmt.Errorf("no such message type named %s", typeName)
+			}
+			if err := c.recursiveFindNestedMessagesAndEnums(curPkg, recordType, typeName, nestedMessages, nestedEnums); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *descriptor.DescriptorProto, pkgName string, duplicatedMessages map[*descriptor.DescriptorProto]string, ignoreDuplicatedMessages bool) (*jsonschema.Type, error) {
+func (c *Converter) recursiveConvertMessageType(
+	curPkg *ProtoPackage,
+	msgDesc *descriptor.DescriptorProto,
+	pkgName string,
+	duplicatedMessages map[*descriptor.DescriptorProto]string,
+	duplicatedEnums map[*descriptor.EnumDescriptorProto]string,
+	ignoreDuplicatedMessages bool,
+) (*jsonschema.Type, error) {
 
 	// Prepare a new jsonschema:
 	jsonSchemaType := new(jsonschema.Type)
@@ -636,7 +690,7 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 		}
 
 		// Convert the field into a JSONSchema type:
-		recursedJSONSchemaType, err := c.convertField(curPkg, fieldDesc, msgDesc, duplicatedMessages, messageFlags)
+		recursedJSONSchemaType, err := c.convertField(curPkg, fieldDesc, msgDesc, duplicatedMessages, duplicatedEnums, messageFlags)
 		if err != nil {
 			c.logger.WithError(err).WithField("field_name", fieldDesc.GetName()).WithField("message_name", msgDesc.GetName()).Error("Failed to convert field")
 			return nil, err
@@ -657,9 +711,10 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 			oneofName := oneofDecl.GetName()
 
 			// Get description from oneof declaration
+			var title string
 			var description string
 			if src := c.sourceInfo.GetOneof(oneofDecl); src != nil {
-				_, description = c.formatTitleAndDescription(strPtr(oneofName), src)
+				title, description = c.formatTitleAndDescription(strPtr(oneofName), src)
 			}
 			// Find or create the OneOfs entry for this oneof index
 			var oneOfEntry *jsonschema.OneOfs
@@ -676,6 +731,7 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msgDesc *d
 			if oneOfEntry == nil {
 				jsonSchemaType.OneOfs = append(jsonSchemaType.OneOfs, jsonschema.OneOfs{
 					Name:        oneofName,
+					Title:       title,
 					Description: description,
 					Fields:      []string{fieldName},
 					Required:    required,

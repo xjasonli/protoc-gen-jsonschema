@@ -127,34 +127,55 @@ func getDefinitionAtPath(file *descriptor.FileDescriptorProto, path []int32) pro
 // formatTitleAndDescription returns a title string and a description string, made from proto comments:
 func (c *Converter) formatTitleAndDescription(name *string, sl *descriptor.SourceCodeInfo_Location) (title, description string) {
 	var comments []string
+	var defaultTitle string
 
 	// Default title is camel-cased & split name:
 	if name != nil {
 		camelName := strcase.ToCamel(*name)
 		splitName := camelcase.Split(camelName)
-		title = strings.Join(splitName, " ")
+		defaultTitle = strings.Join(splitName, " ")
 	}
 
 	// Leading detached comments first:
-	for _, str := range sl.GetLeadingDetachedComments() {
-		if s := strings.TrimSpace(str); s != "" {
-			comments = append(comments, s)
-			title = s
-		}
-	}
+	//for _, str := range sl.GetLeadingDetachedComments() {
+	//	if s := strings.TrimSpace(str); s != "" {
+	//		comments = append(comments, s)
+	//		title = strings.TrimSpace(s)
+	//	}
+	//}
 
 	// Leading comments next:
 	if s := strings.TrimSpace(sl.GetLeadingComments()); s != "" {
-		comments = append(comments, s)
+		lines := strings.Split(s, "\n")
+		if len(lines) == 1 {
+			title = lines[0]
+		} else if len(lines) > 1 {
+			if strings.TrimSpace(lines[1]) == "" {
+				title = strings.TrimSpace(lines[0])
+				comments = append(comments, lines[2:]...)
+			} else {
+				comments = append(comments, lines...)
+			}
+		}
+	}
+
+	if title == "" {
+		title = defaultTitle
 	}
 
 	// Trailing comments last:
 	if s := strings.TrimSpace(sl.GetTrailingComments()); s != "" {
-		comments = append(comments, s)
+		lines := strings.Split(s, "\n")
+		comments = append(comments, lines...)
+	}
+
+	// trim every line in comments
+	for i, line := range comments {
+		comments[i] = strings.TrimSpace(line)
 	}
 
 	// The description is all the comments joined together:
-	description = strings.Join(comments, c.commentDelimiter)
+	description = strings.Join(comments, "\n")
 
 	// Strip newlines:
 	if !c.Flags.KeepNewLinesInDescription {

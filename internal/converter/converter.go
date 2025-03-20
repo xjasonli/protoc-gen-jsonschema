@@ -12,19 +12,20 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/sirupsen/logrus"
 	"github.com/xeipuuv/gojsonschema"
-	"github.com/zachary246/jsonschema"
+
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/proto"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 	plugin "google.golang.org/protobuf/types/pluginpb"
 
+	jsonschema "github.com/xjasonli/protoc-gen-jsonschema/jsonschema"
 	protoc_gen_enum_options "github.com/xjasonli/protoc-gen-jsonschema/options/enum"
 	protoc_gen_file_options "github.com/xjasonli/protoc-gen-jsonschema/options/file"
 	protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
 )
 
 const (
-	defaultCommentDelimiter    = "  "
+	defaultCommentDelimiter    = " "
 	defaultExcludeCommentToken = "@exclude"
 	defaultFileExtension       = "json"
 	defaultPackageName         = "package"
@@ -115,6 +116,8 @@ func (c *Converter) parseGeneratorParameters(parameters string) {
 			c.Flags.EnumsAsStringsOnly = true
 		case "enums_trim_prefix":
 			c.Flags.EnumsTrimPrefix = true
+		case "keep_newlines_in_description":
+			c.Flags.KeepNewLinesInDescription = true
 		case "json_fieldnames":
 			c.Flags.UseJSONFieldnamesOnly = true
 		case "prefix_schema_files_with_package":
@@ -143,7 +146,22 @@ func (c *Converter) parseGeneratorParameters(parameters string) {
 }
 
 // Converts a proto "ENUM" into a JSON-Schema:
-func (c *Converter) convertEnumType(enum *descriptor.EnumDescriptorProto, converterFlags ConverterFlags) (jsonschema.Type, error) {
+func (c *Converter) convertEnumType(
+	enum *descriptor.EnumDescriptorProto,
+	converterFlags ConverterFlags,
+	duplicatedEnums map[*descriptor.EnumDescriptorProto]string,
+) (jsonschema.Type, error) {
+	if nameWithPackage, ok := duplicatedEnums[enum]; ok {
+		var typeName string
+		if c.Flags.TypeNamesWithNoPackage {
+			typeName = enum.GetName()
+		} else {
+			typeName = nameWithPackage
+		}
+		return jsonschema.Type{
+			Ref: fmt.Sprintf("%s%s", c.refPrefix, typeName),
+		}, nil
+	}
 
 	// Prepare a new jsonschema.Type for our eventual return value:
 	jsonSchemaType := jsonschema.Type{}
@@ -205,9 +223,10 @@ func (c *Converter) convertEnumType(enum *descriptor.EnumDescriptorProto, conver
 	for _, value := range enum.Value {
 
 		// Each ENUM value can have comments too:
+		var valueTitle string
 		var valueDescription string
 		if src := c.sourceInfo.GetEnumValue(value); src != nil {
-			_, valueDescription = c.formatTitleAndDescription(nil, src)
+			valueTitle, valueDescription = c.formatTitleAndDescription(nil, src)
 		}
 
 		valueName := value.GetName()
@@ -228,8 +247,12 @@ func (c *Converter) convertEnumType(enum *descriptor.EnumDescriptorProto, conver
 
 		// Add the values to the ENUM:
 		jsonSchemaType.Enum = append(jsonSchemaType.Enum, valueName)
+		jsonSchemaType.EnumDescriptions = append(jsonSchemaType.EnumDescriptions, valueDescription)
+		jsonSchemaType.EnumTitles = append(jsonSchemaType.EnumTitles, valueTitle)
 		if !converterFlags.EnumsAsStringsOnly {
 			jsonSchemaType.Enum = append(jsonSchemaType.Enum, value.Number)
+			jsonSchemaType.EnumDescriptions = append(jsonSchemaType.EnumDescriptions, valueDescription)
+			jsonSchemaType.EnumTitles = append(jsonSchemaType.EnumTitles, valueTitle)
 		}
 	}
 
@@ -264,7 +287,7 @@ func (c *Converter) convertFile(file *descriptor.FileDescriptorProto, fileExtens
 			c.logger.WithField("proto_filename", protoFileName).WithField("enum_name", enum.GetName()).WithField("jsonschema_filename", jsonSchemaFileName).Info("Generating JSON-schema for stand-alone ENUM")
 
 			// Convert the ENUM:
-			enumJSONSchema, err := c.convertEnumType(enum, ConverterFlags{})
+			enumJSONSchema, err := c.convertEnumType(enum, ConverterFlags{}, make(map[*descriptor.EnumDescriptorProto]string))
 			if err != nil {
 				switch err {
 				case errIgnored:
