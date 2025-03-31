@@ -297,6 +297,10 @@ func (c *Converter) convertField(
 			jsonSchemaType.Items.Enum = jsonSchemaType.Enum
 			jsonSchemaType.Enum = nil
 			jsonSchemaType.Items.OneOf = nil
+		} else if jsonSchemaType.Ref != "" {
+			jsonSchemaType.Items.Ref = jsonSchemaType.Ref
+			jsonSchemaType.Ref = ""
+			jsonSchemaType.Items.OneOf = nil
 		} else {
 			jsonSchemaType.Items.Type = jsonSchemaType.Type
 			jsonSchemaType.Items.OneOf = jsonSchemaType.OneOf
