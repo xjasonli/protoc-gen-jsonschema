@@ -1,0 +1,95 @@
+syntax = "proto3";
+package editor;
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/xjasonli/protoc-gen-jsonschema/editor/annotations";
+
+message MessageOptions {
+  // Messages tagged with this will not be processed
+  bool ignore = 3001;
+
+  // Messages tagged with this will have all fields marked as "required":
+  bool all_fields_required = 3002;
+
+  // Messages tagged with this will additionally accept null values for all properties:
+  bool allow_null_values = 3003;
+
+  // Messages tagged with this will have all fields marked as not allowing additional properties:
+  bool disallow_additional_properties = 3004;
+
+  // Messages tagged with this will have all nested enums encoded to use constants instead of simple types (supports value annotations):
+  bool enums_as_constants = 3005;
+}
+
+message EnumOptions {
+  // Enums tagged with this will have be encoded to use constants instead of simple types (supports value annotations):
+  bool enums_as_constants = 3001;
+
+  // Enums tagged with this will only provide string values as options (not their numerical equivalents):
+  bool enums_as_strings_only = 3002;
+  
+  // Enums tagged with this will have enum name prefix removed from values:
+  bool enums_trim_prefix = 3003;
+
+  // Enums tagged with this will not be processed
+  bool ignore = 3004;
+}
+
+message FieldOptions {
+  // Fields tagged with this will be omitted from generated schemas
+  bool ignore = 3001;
+
+  // Fields tagged with this will be marked as "required" in generated schemas
+  bool required = 3002;
+
+  // Fields tagged with this will be flattened in generated schemas
+  bool expanded = 3007;
+
+  // Fields tagged with this will constrain strings using the "minLength" keyword in generated schemas
+  int32 min_length = 3003;
+
+  // Fields tagged with this will constrain strings using the "maxLength" keyword in generated schemas
+  int32 max_length = 3004;
+
+  // Fields tagged with this will constrain strings using the "pattern" keyword in generated schemas
+  string pattern = 3005;
+
+  // Fields tagged with this will use the specified display name in generated schemas 
+  string display_name = 3006;
+
+  // Fields tagged with this will use the specified format in generated schemas
+  string format = 3008;
+}
+
+message FileOptions {
+  // Files tagged with this will not be processed
+  bool ignore = 3001;
+
+  // Override the default file extension for schemas generated from this file
+  string extension = 3002;
+}
+
+message OneofOptions {
+    bool required = 3001;
+}
+
+
+extend google.protobuf.MessageOptions {
+  MessageOptions message = 3001;
+}
+
+extend google.protobuf.EnumOptions {
+  EnumOptions enum = 3001;
+}
+
+extend google.protobuf.FieldOptions {
+  FieldOptions field = 3001;
+}
+
+extend google.protobuf.FileOptions {
+  FileOptions file = 3001;
+}
+
+extend google.protobuf.OneofOptions {
+  OneofOptions oneof = 3001;
+}

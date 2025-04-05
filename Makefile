@@ -15,7 +15,7 @@ fmt:
 
 .PHONY: generate
 generate:
-	@protoc --go_out=options --go_opt=module=github.com/xjasonli/protoc-gen-jsonschema/options --proto_path=. options/*.proto
+	@protoc --go_out=editor --go_opt=module=github.com/xjasonli/protoc-gen-jsonschema/editor --proto_path=. editor/*.proto
 
 .PHONY: install
 install:

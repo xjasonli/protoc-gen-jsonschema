@@ -11,6 +11,9 @@ extend google.protobuf.FieldOptions {
   // Fields tagged with this will be marked as "required" in generated schemas
   bool required = 3002;
 
+  // Fields tagged with this will be flattened in generated schemas
+  bool expanded = 3007;
+
   // Fields tagged with this will constrain strings using the "minLength" keyword in generated schemas
   int32 min_length = 3003;
 
@@ -22,4 +25,7 @@ extend google.protobuf.FieldOptions {
 
   // Fields tagged with this will use the specified display name in generated schemas 
   string display_name = 3006;
+
+  // Fields tagged with this will use the specified format in generated schemas
+  string format = 3008;
 }

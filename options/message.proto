@@ -8,6 +8,9 @@ extend google.protobuf.MessageOptions {
   // Messages tagged with this will not be processed
   bool ignore = 3001;
 
+  // Messages tagged with this will be transparent to it's only-only child
+  bool transparent = 3006;
+
   // Messages tagged with this will have all fields marked as "required":
   bool all_fields_required = 3002;
 

@@ -12,9 +12,11 @@ import (
 
 	protoc_gen_validate "github.com/envoyproxy/protoc-gen-validate/validate"
 	jsonschema "github.com/xjasonli/protoc-gen-jsonschema/jsonschema"
-	protoc_gen_field_options "github.com/xjasonli/protoc-gen-jsonschema/options/field"
-	protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
-	protoc_gen_oneof_options "github.com/xjasonli/protoc-gen-jsonschema/options/oneof"
+
+	//protoc_gen_field_options "github.com/xjasonli/protoc-gen-jsonschema/options/field"
+	//protoc_gen_message_options "github.com/xjasonli/protoc-gen-jsonschema/options/message"
+	//protoc_gen_oneof_options "github.com/xjasonli/protoc-gen-jsonschema/options/oneof"
+	annotations "github.com/xjasonli/protoc-gen-jsonschema/editor/annotations"
 )
 
 var (
@@ -160,17 +162,22 @@ func (c *Converter) convertField(
 
 		// Custom field options from protoc-gen-jsonschema:
 		if opts := desc.GetOptions(); opts != nil {
-			if proto.HasExtension(opts, protoc_gen_field_options.E_MinLength) {
-				minLength := proto.GetExtension(opts, protoc_gen_field_options.E_MinLength).(int32)
-				stringDef.MinLength = int(minLength)
-			}
-			if proto.HasExtension(opts, protoc_gen_field_options.E_MaxLength) {
-				maxLength := proto.GetExtension(opts, protoc_gen_field_options.E_MaxLength).(int32)
-				stringDef.MaxLength = int(maxLength)
-			}
-			if proto.HasExtension(opts, protoc_gen_field_options.E_Pattern) {
-				pattern := proto.GetExtension(opts, protoc_gen_field_options.E_Pattern).(string)
-				stringDef.Pattern = pattern
+			if proto.HasExtension(opts, annotations.E_Field) {
+				fieldOpts := proto.GetExtension(opts, annotations.E_Field).(*annotations.FieldOptions)
+				if fieldOpts != nil {
+					if fieldOpts.MinLength != 0 {
+						stringDef.MinLength = int(fieldOpts.MinLength)
+					}
+					if fieldOpts.MaxLength != 0 {
+						stringDef.MaxLength = int(fieldOpts.MaxLength)
+					}
+					if fieldOpts.Pattern != "" {
+						stringDef.Pattern = fieldOpts.Pattern
+					}
+					if fieldOpts.Format != "" {
+						stringDef.Format = fieldOpts.Format
+					}
+				}
 			}
 		}
 
@@ -195,6 +202,7 @@ func (c *Converter) convertField(
 			jsonSchemaType.MinLength = stringDef.MinLength
 			jsonSchemaType.MaxLength = stringDef.MaxLength
 			jsonSchemaType.Pattern = stringDef.Pattern
+			jsonSchemaType.Format = stringDef.Format
 		}
 
 	// Bytes:
@@ -553,28 +561,21 @@ func (c *Converter) recursiveConvertMessageType(
 
 	// Custom message options from protoc-gen-jsonschema:
 	if opts := msgDesc.GetOptions(); opts != nil {
-		if proto.HasExtension(opts, protoc_gen_message_options.E_AllFieldsRequired) {
-			allFieldsRequired := proto.GetExtension(opts, protoc_gen_message_options.E_AllFieldsRequired).(bool)
-			if allFieldsRequired {
-				messageFlags.AllFieldsRequired = true
-			}
-		}
-		if proto.HasExtension(opts, protoc_gen_message_options.E_AllowNullValues) {
-			allowNullValues := proto.GetExtension(opts, protoc_gen_message_options.E_AllowNullValues).(bool)
-			if allowNullValues {
-				messageFlags.AllowNullValues = true
-			}
-		}
-		if proto.HasExtension(opts, protoc_gen_message_options.E_DisallowAdditionalProperties) {
-			disallowAdditionalProperties := proto.GetExtension(opts, protoc_gen_message_options.E_DisallowAdditionalProperties).(bool)
-			if disallowAdditionalProperties {
-				messageFlags.DisallowAdditionalProperties = true
-			}
-		}
-		if proto.HasExtension(opts, protoc_gen_message_options.E_EnumsAsConstants) {
-			enumsAsConstants := proto.GetExtension(opts, protoc_gen_message_options.E_EnumsAsConstants).(bool)
-			if enumsAsConstants {
-				messageFlags.EnumsAsConstants = true
+		if proto.HasExtension(opts, annotations.E_Message) {
+			messageOpts := proto.GetExtension(opts, annotations.E_Message).(*annotations.MessageOptions)
+			if messageOpts != nil {
+				if messageOpts.AllFieldsRequired {
+					messageFlags.AllFieldsRequired = true
+				}
+				if messageOpts.AllowNullValues {
+					messageFlags.AllowNullValues = true
+				}
+				if messageOpts.DisallowAdditionalProperties {
+					messageFlags.DisallowAdditionalProperties = true
+				}
+				if messageOpts.EnumsAsConstants {
+					messageFlags.EnumsAsConstants = true
+				}
 			}
 		}
 	}
@@ -673,21 +674,28 @@ func (c *Converter) recursiveConvertMessageType(
 
 		// Custom field options from protoc-gen-jsonschema:
 		if opts := fieldDesc.GetOptions(); opts != nil {
-			if proto.HasExtension(opts, protoc_gen_field_options.E_Ignore) {
-				ignore := proto.GetExtension(opts, protoc_gen_field_options.E_Ignore).(bool)
-				if ignore {
-					c.logger.WithField("field_name", fieldDesc.GetName()).WithField("message_name", msgDesc.GetName()).Debug("Skipping ignored field")
-					continue
-				}
-			}
-			if proto.HasExtension(opts, protoc_gen_field_options.E_Required) {
-				required := proto.GetExtension(opts, protoc_gen_field_options.E_Required).(bool)
-				if required {
-					c.logger.WithField("field_name", fieldDesc.GetName()).WithField("message_name", msgDesc.GetName()).Debug("Marking required field")
-					if c.Flags.UseJSONFieldnamesOnly {
-						jsonSchemaType.Required = append(jsonSchemaType.Required, fieldDesc.GetJsonName())
-					} else {
+			if proto.HasExtension(opts, annotations.E_Field) {
+				fieldOpts := proto.GetExtension(opts, annotations.E_Field).(*annotations.FieldOptions)
+				if fieldOpts != nil {
+					if fieldOpts.Ignore {
+						c.logger.WithField("field_name", fieldDesc.GetName()).WithField("message_name", msgDesc.GetName()).Debug("Skipping ignored field")
+						continue
+					}
+					if fieldOpts.Required {
 						jsonSchemaType.Required = append(jsonSchemaType.Required, fieldDesc.GetName())
+						if c.Flags.UseJSONFieldnamesOnly {
+							jsonSchemaType.Required = append(jsonSchemaType.Required, fieldDesc.GetJsonName())
+						} else {
+							jsonSchemaType.Required = append(jsonSchemaType.Required, fieldDesc.GetName())
+						}
+					}
+					if fieldOpts.Expanded {
+						jsonSchemaType.Expanded = append(jsonSchemaType.Expanded, fieldDesc.GetJsonName())
+						if c.Flags.UseJSONFieldnamesOnly {
+							jsonSchemaType.Expanded = append(jsonSchemaType.Expanded, fieldDesc.GetJsonName())
+						} else {
+							jsonSchemaType.Expanded = append(jsonSchemaType.Expanded, fieldDesc.GetName())
+						}
 					}
 				}
 			}
@@ -730,7 +738,13 @@ func (c *Converter) recursiveConvertMessageType(
 			}
 
 			// 检查字段是否必需
-			required := proto.GetExtension(oneofDecl.GetOptions(), protoc_gen_oneof_options.E_Required).(bool)
+			required := false
+			if proto.HasExtension(oneofDecl.GetOptions(), annotations.E_Oneof) {
+				oneofOpts := proto.GetExtension(oneofDecl.GetOptions(), annotations.E_Oneof).(*annotations.OneofOptions)
+				if oneofOpts != nil {
+					required = oneofOpts.Required
+				}
+			}
 
 			if oneOfEntry == nil {
 				jsonSchemaType.OneOfs = append(jsonSchemaType.OneOfs, jsonschema.OneOfs{
