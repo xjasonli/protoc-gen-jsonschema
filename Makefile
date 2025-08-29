@@ -1,6 +1,6 @@
 PROTO_PATH ?= "internal/converter/testdata/proto"
 
-default: build
+default: generate build
 
 .PHONY: build
 build:

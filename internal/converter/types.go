@@ -95,6 +95,18 @@ func (c *Converter) convertField(
 		jsonSchemaType.Title, jsonSchemaType.Description = c.formatTitleAndDescription(nil, src)
 	}
 
+	if opts := desc.GetOptions(); opts != nil {
+		if proto.HasExtension(opts, annotations.E_Field) {
+			fieldOpts := proto.GetExtension(opts, annotations.E_Field).(*annotations.FieldOptions)
+			if fieldOpts != nil {
+				if enable := fieldOpts.Enable; enable != "" {
+					jsonSchemaType.Enable = strPtr(enable)
+				}
+			}
+		}
+	}
+
+
 	// Switch the types, and pick a JSONSchema equivalent:
 	switch desc.GetType() {
 
@@ -523,14 +535,15 @@ func (c *Converter) recursiveFindNestedMessagesAndEnums(
 	for _, desc := range msgDesc.GetField() {
 		descType := desc.GetType()
 		typeName := desc.GetTypeName()
-		if descType == descriptor.FieldDescriptorProto_TYPE_ENUM {
+		switch descType {
+		case descriptor.FieldDescriptorProto_TYPE_ENUM:
 			enumType, _, ok := c.lookupEnum(curPkg, typeName)
 			if !ok {
 				return fmt.Errorf("no such enum type named %s", typeName)
 			}
 			nestedEnums[enumType] = typeName
 
-		} else if descType == descriptor.FieldDescriptorProto_TYPE_MESSAGE || descType == descriptor.FieldDescriptorProto_TYPE_GROUP {
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE, descriptor.FieldDescriptorProto_TYPE_GROUP:
 			recordType, _, ok := c.lookupType(curPkg, typeName)
 			if !ok {
 				return fmt.Errorf("no such message type named %s", typeName)

@@ -71,6 +71,7 @@ type Type struct {
 	MinProperties        int                    `json:"minProperties,omitempty"`    // section 5.14
 	Required             []string               `json:"required,omitempty"`         // section 5.15
 	Expanded             []string               `json:"expanded,omitempty"`
+	Enable               *string                `json:"enable,omitempty"`
 	Properties           *orderedmap.OrderedMap `json:"properties,omitempty"`           // section 5.16
 	PatternProperties    map[string]*Type       `json:"patternProperties,omitempty"`    // section 5.17
 	AdditionalProperties json.RawMessage        `json:"additionalProperties,omitempty"` // section 5.18

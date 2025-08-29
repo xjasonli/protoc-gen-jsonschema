@@ -59,6 +59,9 @@ message FieldOptions {
 
   // Fields tagged with this will use the specified format in generated schemas
   string format = 3008;
+
+  // Fields tagged with this will be enabled if the specified expression is true
+  string enable = 3009;
 }
 
 message FileOptions {
