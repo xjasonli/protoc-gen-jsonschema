@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
+	_ "google.golang.org/protobuf/types/known/anypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -194,7 +195,9 @@ type FieldOptions struct {
 	// Fields tagged with this will use the specified format in generated schemas
 	Format string `protobuf:"bytes,3008,opt,name=format,proto3" json:"format,omitempty"`
 	// Fields tagged with this will be enabled if the specified expression is true
-	Enable        string `protobuf:"bytes,3009,opt,name=enable,proto3" json:"enable,omitempty"`
+	Enable string `protobuf:"bytes,3009,opt,name=enable,proto3" json:"enable,omitempty"`
+	// Fields tagged with this will use the specified select values in generated schemas
+	Select        *Select `protobuf:"bytes,3010,opt,name=select,proto3" json:"select,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -292,6 +295,193 @@ func (x *FieldOptions) GetEnable() string {
 	return ""
 }
 
+func (x *FieldOptions) GetSelect() *Select {
+	if x != nil {
+		return x.Select
+	}
+	return nil
+}
+
+type Select struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Fields tagged with this will allow create values in generated schemas
+	AllowCreate bool `protobuf:"varint,1,opt,name=allow_create,json=allowCreate,proto3" json:"allow_create,omitempty"`
+	// Fields tagged with this will allow search values in generated schemas
+	AllowSearch bool `protobuf:"varint,2,opt,name=allow_search,json=allowSearch,proto3" json:"allow_search,omitempty"`
+	// Fields tagged with this will use the specified string default value in generated schemas
+	StringDefault string `protobuf:"bytes,101,opt,name=string_default,json=stringDefault,proto3" json:"string_default,omitempty"`
+	// Fields tagged with this will use the specified string values in generated schemas
+	StringValues []string `protobuf:"bytes,102,rep,name=string_values,json=stringValues,proto3" json:"string_values,omitempty"`
+	// Fields tagged with this will use the specified int32 default value in generated schemas
+	Int32Default int32 `protobuf:"varint,201,opt,name=int32_default,json=int32Default,proto3" json:"int32_default,omitempty"`
+	// Fields tagged with this will use the specified int32 values in generated schemas
+	Int32Values []int32 `protobuf:"varint,202,rep,packed,name=int32_values,json=int32Values,proto3" json:"int32_values,omitempty"`
+	// Fields tagged with this will use the specified uint32 default value in generated schemas
+	Uint32Default uint32 `protobuf:"varint,301,opt,name=uint32_default,json=uint32Default,proto3" json:"uint32_default,omitempty"`
+	// Fields tagged with this will use the specified uint32 values in generated schemas
+	Uint32Values []uint32 `protobuf:"varint,302,rep,packed,name=uint32_values,json=uint32Values,proto3" json:"uint32_values,omitempty"`
+	// Fields tagged with this will use the specified int64 default value in generated schemas
+	Int64Default int64 `protobuf:"varint,401,opt,name=int64_default,json=int64Default,proto3" json:"int64_default,omitempty"`
+	// Fields tagged with this will use the specified int64 values in generated schemas
+	Int64Values []int64 `protobuf:"varint,402,rep,packed,name=int64_values,json=int64Values,proto3" json:"int64_values,omitempty"`
+	// Fields tagged with this will use the specified uint64 default value in generated schemas
+	Uint64Default uint64 `protobuf:"varint,501,opt,name=uint64_default,json=uint64Default,proto3" json:"uint64_default,omitempty"`
+	// Fields tagged with this will use the specified uint64 values in generated schemas
+	Uint64Values []uint64 `protobuf:"varint,502,rep,packed,name=uint64_values,json=uint64Values,proto3" json:"uint64_values,omitempty"`
+	// Fields tagged with this will use the specified float default value in generated schemas
+	FloatDefault float32 `protobuf:"fixed32,601,opt,name=float_default,json=floatDefault,proto3" json:"float_default,omitempty"`
+	// Fields tagged with this will use the specified float values in generated schemas
+	FloatValues []float32 `protobuf:"fixed32,602,rep,packed,name=float_values,json=floatValues,proto3" json:"float_values,omitempty"`
+	// Fields tagged with this will use the specified double default value in generated schemas
+	DoubleDefault float64 `protobuf:"fixed64,701,opt,name=double_default,json=doubleDefault,proto3" json:"double_default,omitempty"`
+	// Fields tagged with this will use the specified double values in generated schemas
+	DoubleValues  []float64 `protobuf:"fixed64,702,rep,packed,name=double_values,json=doubleValues,proto3" json:"double_values,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Select) Reset() {
+	*x = Select{}
+	mi := &file_editor_annotations_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Select) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Select) ProtoMessage() {}
+
+func (x *Select) ProtoReflect() protoreflect.Message {
+	mi := &file_editor_annotations_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Select.ProtoReflect.Descriptor instead.
+func (*Select) Descriptor() ([]byte, []int) {
+	return file_editor_annotations_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Select) GetAllowCreate() bool {
+	if x != nil {
+		return x.AllowCreate
+	}
+	return false
+}
+
+func (x *Select) GetAllowSearch() bool {
+	if x != nil {
+		return x.AllowSearch
+	}
+	return false
+}
+
+func (x *Select) GetStringDefault() string {
+	if x != nil {
+		return x.StringDefault
+	}
+	return ""
+}
+
+func (x *Select) GetStringValues() []string {
+	if x != nil {
+		return x.StringValues
+	}
+	return nil
+}
+
+func (x *Select) GetInt32Default() int32 {
+	if x != nil {
+		return x.Int32Default
+	}
+	return 0
+}
+
+func (x *Select) GetInt32Values() []int32 {
+	if x != nil {
+		return x.Int32Values
+	}
+	return nil
+}
+
+func (x *Select) GetUint32Default() uint32 {
+	if x != nil {
+		return x.Uint32Default
+	}
+	return 0
+}
+
+func (x *Select) GetUint32Values() []uint32 {
+	if x != nil {
+		return x.Uint32Values
+	}
+	return nil
+}
+
+func (x *Select) GetInt64Default() int64 {
+	if x != nil {
+		return x.Int64Default
+	}
+	return 0
+}
+
+func (x *Select) GetInt64Values() []int64 {
+	if x != nil {
+		return x.Int64Values
+	}
+	return nil
+}
+
+func (x *Select) GetUint64Default() uint64 {
+	if x != nil {
+		return x.Uint64Default
+	}
+	return 0
+}
+
+func (x *Select) GetUint64Values() []uint64 {
+	if x != nil {
+		return x.Uint64Values
+	}
+	return nil
+}
+
+func (x *Select) GetFloatDefault() float32 {
+	if x != nil {
+		return x.FloatDefault
+	}
+	return 0
+}
+
+func (x *Select) GetFloatValues() []float32 {
+	if x != nil {
+		return x.FloatValues
+	}
+	return nil
+}
+
+func (x *Select) GetDoubleDefault() float64 {
+	if x != nil {
+		return x.DoubleDefault
+	}
+	return 0
+}
+
+func (x *Select) GetDoubleValues() []float64 {
+	if x != nil {
+		return x.DoubleValues
+	}
+	return nil
+}
+
 type FileOptions struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Files tagged with this will not be processed
@@ -304,7 +494,7 @@ type FileOptions struct {
 
 func (x *FileOptions) Reset() {
 	*x = FileOptions{}
-	mi := &file_editor_annotations_proto_msgTypes[3]
+	mi := &file_editor_annotations_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -316,7 +506,7 @@ func (x *FileOptions) String() string {
 func (*FileOptions) ProtoMessage() {}
 
 func (x *FileOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_editor_annotations_proto_msgTypes[3]
+	mi := &file_editor_annotations_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +519,7 @@ func (x *FileOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileOptions.ProtoReflect.Descriptor instead.
 func (*FileOptions) Descriptor() ([]byte, []int) {
-	return file_editor_annotations_proto_rawDescGZIP(), []int{3}
+	return file_editor_annotations_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *FileOptions) GetIgnore() bool {
@@ -355,7 +545,7 @@ type OneofOptions struct {
 
 func (x *OneofOptions) Reset() {
 	*x = OneofOptions{}
-	mi := &file_editor_annotations_proto_msgTypes[4]
+	mi := &file_editor_annotations_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -367,7 +557,7 @@ func (x *OneofOptions) String() string {
 func (*OneofOptions) ProtoMessage() {}
 
 func (x *OneofOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_editor_annotations_proto_msgTypes[4]
+	mi := &file_editor_annotations_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -380,7 +570,7 @@ func (x *OneofOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OneofOptions.ProtoReflect.Descriptor instead.
 func (*OneofOptions) Descriptor() ([]byte, []int) {
-	return file_editor_annotations_proto_rawDescGZIP(), []int{4}
+	return file_editor_annotations_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *OneofOptions) GetRequired() bool {
@@ -467,7 +657,7 @@ var File_editor_annotations_proto protoreflect.FileDescriptor
 
 const file_editor_annotations_proto_rawDesc = "" +
 	"\n" +
-	"\x18editor/annotations.proto\x12\x06editor\x1a google/protobuf/descriptor.proto\"\xfd\x01\n" +
+	"\x18editor/annotations.proto\x12\x06editor\x1a google/protobuf/descriptor.proto\x1a\x19google/protobuf/any.proto\"\xfd\x01\n" +
 	"\x0eMessageOptions\x12\x17\n" +
 	"\x06ignore\x18\xb9\x17 \x01(\bR\x06ignore\x12/\n" +
 	"\x13all_fields_required\x18\xba\x17 \x01(\bR\x11allFieldsRequired\x12+\n" +
@@ -478,7 +668,7 @@ const file_editor_annotations_proto_rawDesc = "" +
 	"\x12enums_as_constants\x18\xb9\x17 \x01(\bR\x10enumsAsConstants\x122\n" +
 	"\x15enums_as_strings_only\x18\xba\x17 \x01(\bR\x12enumsAsStringsOnly\x12+\n" +
 	"\x11enums_trim_prefix\x18\xbb\x17 \x01(\bR\x0fenumsTrimPrefix\x12\x17\n" +
-	"\x06ignore\x18\xbc\x17 \x01(\bR\x06ignore\"\x92\x02\n" +
+	"\x06ignore\x18\xbc\x17 \x01(\bR\x06ignore\"\xbb\x02\n" +
 	"\fFieldOptions\x12\x17\n" +
 	"\x06ignore\x18\xb9\x17 \x01(\bR\x06ignore\x12\x1b\n" +
 	"\brequired\x18\xba\x17 \x01(\bR\brequired\x12\x1b\n" +
@@ -490,7 +680,25 @@ const file_editor_annotations_proto_rawDesc = "" +
 	"\apattern\x18\xbd\x17 \x01(\tR\apattern\x12\"\n" +
 	"\fdisplay_name\x18\xbe\x17 \x01(\tR\vdisplayName\x12\x17\n" +
 	"\x06format\x18\xc0\x17 \x01(\tR\x06format\x12\x17\n" +
-	"\x06enable\x18\xc1\x17 \x01(\tR\x06enable\"E\n" +
+	"\x06enable\x18\xc1\x17 \x01(\tR\x06enable\x12'\n" +
+	"\x06select\x18\xc2\x17 \x01(\v2\x0e.editor.SelectR\x06select\"\xe2\x04\n" +
+	"\x06Select\x12!\n" +
+	"\fallow_create\x18\x01 \x01(\bR\vallowCreate\x12!\n" +
+	"\fallow_search\x18\x02 \x01(\bR\vallowSearch\x12%\n" +
+	"\x0estring_default\x18e \x01(\tR\rstringDefault\x12#\n" +
+	"\rstring_values\x18f \x03(\tR\fstringValues\x12$\n" +
+	"\rint32_default\x18\xc9\x01 \x01(\x05R\fint32Default\x12\"\n" +
+	"\fint32_values\x18\xca\x01 \x03(\x05R\vint32Values\x12&\n" +
+	"\x0euint32_default\x18\xad\x02 \x01(\rR\ruint32Default\x12$\n" +
+	"\ruint32_values\x18\xae\x02 \x03(\rR\fuint32Values\x12$\n" +
+	"\rint64_default\x18\x91\x03 \x01(\x03R\fint64Default\x12\"\n" +
+	"\fint64_values\x18\x92\x03 \x03(\x03R\vint64Values\x12&\n" +
+	"\x0euint64_default\x18\xf5\x03 \x01(\x04R\ruint64Default\x12$\n" +
+	"\ruint64_values\x18\xf6\x03 \x03(\x04R\fuint64Values\x12$\n" +
+	"\rfloat_default\x18\xd9\x04 \x01(\x02R\ffloatDefault\x12\"\n" +
+	"\ffloat_values\x18\xda\x04 \x03(\x02R\vfloatValues\x12&\n" +
+	"\x0edouble_default\x18\xbd\x05 \x01(\x01R\rdoubleDefault\x12$\n" +
+	"\rdouble_values\x18\xbe\x05 \x03(\x01R\fdoubleValues\"E\n" +
 	"\vFileOptions\x12\x17\n" +
 	"\x06ignore\x18\xb9\x17 \x01(\bR\x06ignore\x12\x1d\n" +
 	"\textension\x18\xba\x17 \x01(\tR\textension\"+\n" +
@@ -514,35 +722,37 @@ func file_editor_annotations_proto_rawDescGZIP() []byte {
 	return file_editor_annotations_proto_rawDescData
 }
 
-var file_editor_annotations_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_editor_annotations_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_editor_annotations_proto_goTypes = []any{
 	(*MessageOptions)(nil),              // 0: editor.MessageOptions
 	(*EnumOptions)(nil),                 // 1: editor.EnumOptions
 	(*FieldOptions)(nil),                // 2: editor.FieldOptions
-	(*FileOptions)(nil),                 // 3: editor.FileOptions
-	(*OneofOptions)(nil),                // 4: editor.OneofOptions
-	(*descriptorpb.MessageOptions)(nil), // 5: google.protobuf.MessageOptions
-	(*descriptorpb.EnumOptions)(nil),    // 6: google.protobuf.EnumOptions
-	(*descriptorpb.FieldOptions)(nil),   // 7: google.protobuf.FieldOptions
-	(*descriptorpb.FileOptions)(nil),    // 8: google.protobuf.FileOptions
-	(*descriptorpb.OneofOptions)(nil),   // 9: google.protobuf.OneofOptions
+	(*Select)(nil),                      // 3: editor.Select
+	(*FileOptions)(nil),                 // 4: editor.FileOptions
+	(*OneofOptions)(nil),                // 5: editor.OneofOptions
+	(*descriptorpb.MessageOptions)(nil), // 6: google.protobuf.MessageOptions
+	(*descriptorpb.EnumOptions)(nil),    // 7: google.protobuf.EnumOptions
+	(*descriptorpb.FieldOptions)(nil),   // 8: google.protobuf.FieldOptions
+	(*descriptorpb.FileOptions)(nil),    // 9: google.protobuf.FileOptions
+	(*descriptorpb.OneofOptions)(nil),   // 10: google.protobuf.OneofOptions
 }
 var file_editor_annotations_proto_depIdxs = []int32{
-	5,  // 0: editor.message:extendee -> google.protobuf.MessageOptions
-	6,  // 1: editor.enum:extendee -> google.protobuf.EnumOptions
-	7,  // 2: editor.field:extendee -> google.protobuf.FieldOptions
-	8,  // 3: editor.file:extendee -> google.protobuf.FileOptions
-	9,  // 4: editor.oneof:extendee -> google.protobuf.OneofOptions
-	0,  // 5: editor.message:type_name -> editor.MessageOptions
-	1,  // 6: editor.enum:type_name -> editor.EnumOptions
-	2,  // 7: editor.field:type_name -> editor.FieldOptions
-	3,  // 8: editor.file:type_name -> editor.FileOptions
-	4,  // 9: editor.oneof:type_name -> editor.OneofOptions
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	5,  // [5:10] is the sub-list for extension type_name
-	0,  // [0:5] is the sub-list for extension extendee
-	0,  // [0:0] is the sub-list for field type_name
+	3,  // 0: editor.FieldOptions.select:type_name -> editor.Select
+	6,  // 1: editor.message:extendee -> google.protobuf.MessageOptions
+	7,  // 2: editor.enum:extendee -> google.protobuf.EnumOptions
+	8,  // 3: editor.field:extendee -> google.protobuf.FieldOptions
+	9,  // 4: editor.file:extendee -> google.protobuf.FileOptions
+	10, // 5: editor.oneof:extendee -> google.protobuf.OneofOptions
+	0,  // 6: editor.message:type_name -> editor.MessageOptions
+	1,  // 7: editor.enum:type_name -> editor.EnumOptions
+	2,  // 8: editor.field:type_name -> editor.FieldOptions
+	4,  // 9: editor.file:type_name -> editor.FileOptions
+	5,  // 10: editor.oneof:type_name -> editor.OneofOptions
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	6,  // [6:11] is the sub-list for extension type_name
+	1,  // [1:6] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_editor_annotations_proto_init() }
@@ -556,7 +766,7 @@ func file_editor_annotations_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_editor_annotations_proto_rawDesc), len(file_editor_annotations_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 5,
 			NumServices:   0,
 		},

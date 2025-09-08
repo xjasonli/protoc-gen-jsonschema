@@ -1,6 +1,7 @@
 syntax = "proto3";
 package editor;
 import "google/protobuf/descriptor.proto";
+import "google/protobuf/any.proto";
 
 option go_package = "github.com/xjasonli/protoc-gen-jsonschema/editor/annotations";
 
@@ -62,6 +63,66 @@ message FieldOptions {
 
   // Fields tagged with this will be enabled if the specified expression is true
   string enable = 3009;
+
+  // Fields tagged with this will use the specified select values in generated schemas
+  Select select = 3010;
+}
+
+message Select {
+  // Fields tagged with this will allow create values in generated schemas
+  bool allow_create = 1;
+
+  // Fields tagged with this will allow search values in generated schemas
+  bool allow_search = 2;
+
+
+  // Fields tagged with this will use the specified string default value in generated schemas
+  string string_default = 101;
+
+  // Fields tagged with this will use the specified string values in generated schemas
+  repeated string string_values = 102;
+
+
+  // Fields tagged with this will use the specified int32 default value in generated schemas
+  int32 int32_default = 201;
+
+  // Fields tagged with this will use the specified int32 values in generated schemas
+  repeated int32 int32_values = 202;
+
+
+  // Fields tagged with this will use the specified uint32 default value in generated schemas
+  uint32 uint32_default = 301;
+
+  // Fields tagged with this will use the specified uint32 values in generated schemas
+  repeated uint32 uint32_values = 302;
+
+
+  // Fields tagged with this will use the specified int64 default value in generated schemas
+  int64 int64_default = 401;
+
+  // Fields tagged with this will use the specified int64 values in generated schemas
+  repeated int64 int64_values = 402;
+
+
+  // Fields tagged with this will use the specified uint64 default value in generated schemas
+  uint64 uint64_default = 501;
+
+  // Fields tagged with this will use the specified uint64 values in generated schemas
+  repeated uint64 uint64_values = 502;
+
+
+  // Fields tagged with this will use the specified float default value in generated schemas
+  float float_default = 601;
+
+  // Fields tagged with this will use the specified float values in generated schemas
+  repeated float float_values = 602;
+
+
+  // Fields tagged with this will use the specified double default value in generated schemas
+  double double_default = 701;
+
+  // Fields tagged with this will use the specified double values in generated schemas
+  repeated double double_values = 702;
 }
 
 message FileOptions {

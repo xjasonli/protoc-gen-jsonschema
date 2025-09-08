@@ -48,6 +48,27 @@ type customGetFieldDocString func(fieldName string) string
 
 var customStructGetFieldDocString = reflect.TypeOf((*customSchemaGetFieldDocString)(nil)).Elem()
 
+type StringSelect struct {
+	AllowCreate			bool		`json:"allowCreate,omitempty"`
+	AllowSearch			bool		`json:"allowSearch,omitempty"`
+	DefaultValue		string		`json:"defaultValue,omitempty"`
+	Values				[]string	`json:"values,omitempty"`
+}
+
+type IntegerSelect struct {
+	AllowCreate			bool		`json:"allowCreate,omitempty"`
+	AllowSearch			bool		`json:"allowSearch,omitempty"`
+	DefaultValue		int64		`json:"defaultValue,omitempty"`
+	Values				[]int64		`json:"values,omitempty"`
+}
+
+type NumberSelect struct {
+	AllowCreate			bool		`json:"allowCreate,omitempty"`
+	AllowSearch			bool		`json:"allowSearch,omitempty"`
+	DefaultValue		float64		`json:"defaultValue,omitempty"`
+	Values				[]float64	`json:"values,omitempty"`
+}
+
 // Type represents a JSON Schema object type.
 type Type struct {
 	// RFC draft-wright-json-schema-00
@@ -72,6 +93,7 @@ type Type struct {
 	Required             []string               `json:"required,omitempty"`         // section 5.15
 	Expanded             []string               `json:"expanded,omitempty"`
 	Enable               *string                `json:"enable,omitempty"`
+	Select               interface{}            `json:"select,omitempty"`
 	Properties           *orderedmap.OrderedMap `json:"properties,omitempty"`           // section 5.16
 	PatternProperties    map[string]*Type       `json:"patternProperties,omitempty"`    // section 5.17
 	AdditionalProperties json.RawMessage        `json:"additionalProperties,omitempty"` // section 5.18

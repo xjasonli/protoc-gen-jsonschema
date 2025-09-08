@@ -102,10 +102,90 @@ func (c *Converter) convertField(
 				if enable := fieldOpts.Enable; enable != "" {
 					jsonSchemaType.Enable = strPtr(enable)
 				}
+				if selopt := fieldOpts.Select; selopt != nil {
+					if selopt.StringValues != nil {
+						jsonSchemaType.Select = &jsonschema.StringSelect{
+							AllowCreate: selopt.AllowCreate,
+							AllowSearch: selopt.AllowSearch,
+							DefaultValue:     selopt.StringDefault,
+							Values:     selopt.StringValues,
+						}
+					}
+					if selopt.Int32Values != nil {
+						// Convert int32 array to int64 array
+						int64Values := make([]int64, len(selopt.Int32Values))
+						for i, v := range selopt.Int32Values {
+							int64Values[i] = int64(v)
+						}
+						jsonSchemaType.Select = &jsonschema.IntegerSelect{
+							AllowCreate: selopt.AllowCreate,
+							AllowSearch: selopt.AllowSearch,
+							DefaultValue:     int64(selopt.Int32Default),
+							Values:     int64Values,
+						}
+					}
+					if selopt.Uint32Values != nil {
+						// Convert uint32 array to int64 array
+						int64Values := make([]int64, len(selopt.Uint32Values))
+						for i, v := range selopt.Uint32Values {
+							int64Values[i] = int64(v)
+						}
+						jsonSchemaType.Select = &jsonschema.IntegerSelect{
+							AllowCreate: selopt.AllowCreate,
+							AllowSearch: selopt.AllowSearch,
+							DefaultValue:     int64(selopt.Int32Default),
+							Values:     int64Values,
+						}
+					}
+					if selopt.Int64Values != nil {
+						jsonSchemaType.Select = &jsonschema.IntegerSelect{
+							AllowCreate: selopt.AllowCreate,
+							AllowSearch: selopt.AllowSearch,
+							DefaultValue:     selopt.Int64Default,
+							Values:     selopt.Int64Values,
+						}
+					}
+					if selopt.Uint64Values != nil {
+						// Convert uint64 array to int64 array
+						int64Values := make([]int64, len(selopt.Uint64Values))
+						for i, v := range selopt.Uint64Values {
+							int64Values[i] = int64(v)
+						}
+						jsonSchemaType.Select = &jsonschema.IntegerSelect{
+							AllowCreate: selopt.AllowCreate,
+							AllowSearch: selopt.AllowSearch,
+							DefaultValue:     selopt.Int64Default,
+							Values:     int64Values,
+						}
+					}
+					if selopt.FloatValues != nil {
+						// Convert float32 array to float64 array
+						float64Values := make([]float64, len(selopt.FloatValues))
+						for i, v := range selopt.FloatValues {
+							float64Values[i] = float64(v)
+						}
+						jsonSchemaType.Select = &jsonschema.NumberSelect{
+							AllowCreate: selopt.AllowCreate,
+							AllowSearch: selopt.AllowSearch,
+							DefaultValue:     float64(selopt.FloatDefault),
+							Values:     float64Values,
+						}
+					}
+					if selopt.DoubleValues != nil {
+						jsonSchemaType.Select = &jsonschema.NumberSelect{
+							AllowCreate: selopt.AllowCreate,
+							AllowSearch: selopt.AllowSearch,
+							DefaultValue:     selopt.DoubleDefault,
+							Values:     selopt.DoubleValues,
+						}
+					}
+				}
+				if fieldOpts.Format != "" {
+					jsonSchemaType.Format = fieldOpts.Format
+				}
 			}
 		}
 	}
-
 
 	// Switch the types, and pick a JSONSchema equivalent:
 	switch desc.GetType() {
@@ -186,9 +266,6 @@ func (c *Converter) convertField(
 					if fieldOpts.Pattern != "" {
 						stringDef.Pattern = fieldOpts.Pattern
 					}
-					if fieldOpts.Format != "" {
-						stringDef.Format = fieldOpts.Format
-					}
 				}
 			}
 		}
@@ -214,7 +291,6 @@ func (c *Converter) convertField(
 			jsonSchemaType.MinLength = stringDef.MinLength
 			jsonSchemaType.MaxLength = stringDef.MaxLength
 			jsonSchemaType.Pattern = stringDef.Pattern
-			jsonSchemaType.Format = stringDef.Format
 		}
 
 	// Bytes:
